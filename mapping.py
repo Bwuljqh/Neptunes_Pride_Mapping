@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import requests
 import json
 
+from datetime import datetime
 from numpy import  sqrt
 
 def getJsons(game_number, 
@@ -22,7 +23,13 @@ def getJsons(game_number,
     for i in codes:
         keys = {"api_version": api_version, "game_number": game_number, "code": i}
         req = requests.post(url, data = keys)
-        jsons.append(req.json())
+        temp = req.json()
+        
+        if 'error' in temp:
+            print(temp['error'])
+        else:
+            jsons.append(temp)
+        
     return jsons
 
 
@@ -40,11 +47,22 @@ def getValues(jsons):
     
     # player = []
     
+    if len(jsons) == 0:
+        print('No data has been provided')
+        return
+    
     number_player = len(jsons[0]['scanning_data']['players'])
+    
+    
+    labels = [jsons[0]['scanning_data']['players'][str(j)]['alias'] for j in range(number_player)]
+    labels += ['Neutral']
     
     data = {"stars" : dict(), "fleets": dict()}
     data["nb_player"] = number_player
+    data["labels"] = labels
+    
     for i in jsons:
+        
         i['scanning_data']['players']['-1'] = {'tech': {'terraforming': {'value':0}}}
         
         for j in i['scanning_data']['stars'].values():
@@ -66,33 +84,6 @@ def getValues(jsons):
             if "ouid" in j:
                 data["fleets"][j['uid']]["ouid"] = j['ouid']
 
-    # for i in jsons:
-    #     values = i['scanning_data']['stars'].values()
-    #     tempX = [float(j['x']) for j in values]
-    #     tempY = [float(j['y']) for j in values]
-        
-    #     tempSt = [j['st'] for j in values]
-    #     tempNr = [j['nr'] for j in values]
-    #     i['scanning_data']['players']['-1'] = {'tech': {'terraforming': {'value':0}}}
-    #     tempTr = [i['scanning_data']['players'][str(j['puid'])]['tech']['terraforming']['value']*5 for j in values]
-       
-    #     tempPlayer = [j['puid'] for j in values]
-             
-    #     xs += tempX
-    #     ys += tempY
-        
-    #     nrs += tempNr
-    #     sts += tempSt
-    #     trs += tempTr
-
-    #     player += tempPlayer
-
-    labels = [jsons[0]['scanning_data']['players'][str(j)]['alias'] for j in range(number_player)]
-    labels += ['Neutral']
-    
-    data["labels"] = labels
-    
-    # return {"xs":xs, "ys": ys, "sts":sts, "nrs":nrs,"trs":trs,"player": player, "labels": labels, "nb_player": number_player}
     return data
 
 def cleanStarsValues(dictValue, nb_player):
@@ -102,17 +93,13 @@ def cleanStarsValues(dictValue, nb_player):
     players = [[ [] for j in range(5)] for i in range(nb_player + 1)]
     
     for i in dictValue.values():
+        
         players[i["puid"]][0].append(i["x"])
         players[i["puid"]][1].append(i["y"]*-1)
         players[i["puid"]][2].append(i["nr"])
 
-        
         players[i["puid"]][3].append(i["nr"] + int(i["tr"]))
         players[i["puid"]][4].append((i["st"]+1)*50/1500)
-    
-    # iys = list(array(dictValue["ys"])*-1*1)
-    # ixs = list(array(dictValue["xs"])*1)
-    # ists = 50*(array(dictValue["sts"]) + 1)/max(dictValue["sts"])
 
     return players
 
@@ -223,7 +210,7 @@ def plotMapStars(players,markers, colors, labels, size = "nr"):
     plt.title(title)
 
 
-def mapTheGalaxy(planetSize = "troops", fleetTroops = True, fleetOrders = True, subsequentOrders = False):
+def mapTheGalaxy(planetSize = "troops", fleetTroops = True, fleetOrders = True, subsequentOrders = False, dpi = 2400):
    """ planetSize is a String and can be nr to show the natural ressources, tr to show the actual ressources or troops to display the troops.
        fleetOrders is a Boolean value, True will disaply arrows to indiquate where the fleets are moving
        fleetTroops is a Boolean value, True will make the size of the fleets represent the number of troops
@@ -247,7 +234,11 @@ def mapTheGalaxy(planetSize = "troops", fleetTroops = True, fleetOrders = True, 
 
    plotMapStars(cleanValues, markers, colors, values["labels"], planetSize)
    plotMapFleets(values["fleets"],values["stars"], markers, colors,fleetOrders, fleetTroops,subsequentOrders)
-    
+   
+   now = datetime.now()
+   dt_string = now.strftime("%d%m%Y_%H%M%S")
+   
+   plt.savefig('figures/last_figure_' + dt_string +'.png', bbox_inches = 'tight', dpi = dpi) 
    plt.show()
    
 mapTheGalaxy()
