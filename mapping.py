@@ -20,16 +20,27 @@ def getJsons(game_number,
     
     jsons = []
     
+    if len(codes) == 0:
+        print("No codes have been provided")
+        return False
+    
     for i in codes:
         keys = {"api_version": api_version, "game_number": game_number, "code": i}
         req = requests.post(url, data = keys)
         temp = req.json()
         
         if 'error' in temp:
-            print(temp['error'])
+            if temp["error"] == "code not found in game":
+                print("code " + i + " not found in game " + game_number)
+            else:
+                print(temp['error'])
         else:
             jsons.append(temp)
         
+    if len(jsons) == 0:
+        print('No data has been fetched')
+        return False
+    
     return jsons
 
 
@@ -37,20 +48,7 @@ def getValues(jsons):
     """Retrieve stars values from a list of jsons from the Neptune's Pride Api"""
     if type(jsons) != list:
         jsons = [jsons]
-    
-    # xs = []
-    # ys = []
-    
-    # sts = []
-    # nrs = []
-    # trs = []
-    
-    # player = []
-    
-    if len(jsons) == 0:
-        print('No data has been provided')
-        return
-    
+
     number_player = len(jsons[0]['scanning_data']['players'])
     
     
@@ -224,8 +222,12 @@ def mapTheGalaxy(planetSize = "troops", fleetTroops = True, fleetOrders = True, 
     
    jsons = getJsons(data["game_number"],data["codes"],data["api_version"],data["url"])
 
+   if jsons == False:
+       print("Aborting")
+       return
+   
    values = getValues(jsons)
-
+        
    cleanFleetsValues(values["fleets"], values["stars"])
 
    plt.figure(dpi=1200)
