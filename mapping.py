@@ -7,18 +7,19 @@ Created on Thu Jan 27 13:56:58 2022
 
 import json
 from datetime import datetime
-
+from typing import List
 import matplotlib.pyplot as plt
 import requests
-from numpy import sqrt
+from numpy import sqrt, log10
 
-EXTRACTED_DATA_FOLDER="extracted_data"
+EXTRACTED_DATA_FOLDER = "extracted_data"
 
-def getJsons(game_number, 
-             codes, 
-             api_version = "0.1", 
-             url = "https://np.ironhelmet.com/api", save_files=True):
-    
+
+def getJsons(game_number: str,
+             codes: List[str],
+             api_version: str = "0.1",
+             url: str = "https://np.ironhelmet.com/api",
+             save_files: bool = False) -> List[dict]:
     """
     Returns a list of values collected via the API
 
@@ -36,21 +37,22 @@ def getJsons(game_number,
         return False
 
     # Fetch data from the API via a loop on the codes we have
-    for i in codes:
-        keys = {"api_version": api_version, "game_number": game_number, "code": i}
+    keys = {"api_version": api_version, "game_number": game_number}
+    for code in codes:
+        keys.update({"code": code})
         req = requests.post(url, data=keys)
         temp = req.json()
 
         # Errors from the api are codified, if there is an error, we raise it but continue to loop on the codes
         if 'error' in temp:
             if temp["error"] == "code not found in game":
-                print("code " + i + " not found in game " + game_number)
+                print("code " + code + " not found in game " + game_number)
             else:
                 print(temp['error'])
         else:
             if save_files:
                 # TODO : save each JSON in a spearate file, named `extracted_data/<code>_yyyy-mm-dd_hh:mm:ss.json`
-                with open(f"{EXTRACTED_DATA_FOLDER}/{i}_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.json", 'w') as data_file:
+                with open(f"{EXTRACTED_DATA_FOLDER}/{code}_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.json", 'w') as data_file:
                     json.dump(temp, data_file)
             jsons.append(temp)
 
@@ -59,7 +61,7 @@ def getJsons(game_number,
         print('No data has been fetched')
         return False
 
-    print("Raw Data fecthed")
+    print("Raw Data fetched")
     return jsons
 
 
@@ -79,7 +81,7 @@ def getValues(jsons):
     labels += ['Neutral']
 
     # Create base dicts and prepare data
-    data = {"stars": dict(), "fleets": dict()}
+    data = {"stars": {}, "fleets": {}}
     data["nb_player"] = number_player
     data["labels"] = labels
 
@@ -117,6 +119,7 @@ def getValues(jsons):
                 data["fleets"][j['uid']]["ouid"] = j['ouid']
 
     print("Values fetched")
+    print(data["fleets"])
     return data
 
 
@@ -158,7 +161,7 @@ def cleanFleetsValues(fleets, stars):
     :param dict stars: The stars we retreived from getValues
     """
 
-    # More things may be added here, currently, it updates the plantes if a fleet is stationned on it
+    # More things may be added here, currently, it updates the planet if a fleet is stationned on it
     for i in fleets.values():
         if "ouid" in i:
             stars[i["ouid"]]["st"] += i["st"]
@@ -197,7 +200,7 @@ def plotMapFleets(fleets,
 
         # Attributing sizes
         if troops:
-            size = (i["st"]+1)*ratio/1500
+            size = log10(i["st"]+1)
         else:
             size = 10
 
@@ -307,7 +310,7 @@ def plotMapStars(players,
         plt.scatter(players[i]["x"], players[i]["y"],
                     marker=marker,
                     c=color,
-                    s=players[i][size],
+                    s=log10(players[i][size]),
                     label=labels[i],
                     edgecolors="#808080",
                     linewidths=0.2)
@@ -414,4 +417,4 @@ def mapTheGalaxy(planetSize="st",
     # plt.show()
 
 
-mapTheGalaxy(planetSize="st", showFleets=True, fleetTroops=True, fleetOrders=True, subsequentOrders=False, ratio=50, save=True, dpi=2400)
+mapTheGalaxy(planetSize="st", showFleets=False, fleetTroops=True, fleetOrders=True, subsequentOrders=False, ratio=50, save=True, dpi=2400)
