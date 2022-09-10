@@ -12,10 +12,12 @@ import json
 from datetime import datetime
 from numpy import  sqrt
 
+EXTRACTED_DATA_FOLDER="extracted_data"
+
 def getJsons(game_number, 
              codes, 
              api_version = "0.1", 
-             url = "https://np.ironhelmet.com/api"):
+             url = "https://np.ironhelmet.com/api", save_files=True):
     
     """
     Returns a list of values collected via the API
@@ -46,6 +48,10 @@ def getJsons(game_number,
             else:
                 print(temp['error'])
         else:
+            if save_files:
+                # TODO : save each JSON in a spearate file, named `extracted_data/<code>_yyyy-mm-dd_hh:mm:ss.json`
+                with open(f"{EXTRACTED_DATA_FOLDER}/{i}_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.json", 'w') as data_file:
+                    json.dump(temp, data_file)
             jsons.append(temp)
     
     #No data, abort
@@ -53,7 +59,7 @@ def getJsons(game_number,
         print('No data has been fetched')
         return False
     
-    print("Raw Data fecthed")
+    print("Raw Data fetched")
     return jsons
 
 
@@ -408,6 +414,6 @@ def mapTheGalaxy(planetSize = "st",
     if save :
         plt.savefig('figures/last_figure_' + dt_string +'.png', bbox_inches = 'tight', dpi = dpi) 
         
-    plt.show()
+    # plt.show()
    
-mapTheGalaxy(planetSize = "st", showFleets = True, fleetTroops = True, fleetOrders = True, subsequentOrders = False, ratio = 50, save = False, dpi = 2400)
+mapTheGalaxy(planetSize = "st", showFleets = True, fleetTroops = True, fleetOrders = True, subsequentOrders = False, ratio = 50, save = True, dpi = 2400)

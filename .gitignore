@@ -1,3 +1,4 @@
-
+venv
+extracted_data
 data.json
 *.png
