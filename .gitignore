@@ -1,4 +1,10 @@
 venv
 extracted_data
+Lib
+Scripts
+Include
+pyvenv.cfg
 data.json
 *.png
+share
+figures
